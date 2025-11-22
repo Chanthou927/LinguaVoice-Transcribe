@@ -6,6 +6,7 @@ export enum Language {
 export enum AppState {
   IDLE = 'IDLE',
   RECORDING = 'RECORDING',
+  PAUSED = 'PAUSED',
   PROCESSING = 'PROCESSING',
   COMPLETED = 'COMPLETED',
   ERROR = 'ERROR',

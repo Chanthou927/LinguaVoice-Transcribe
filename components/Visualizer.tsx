@@ -3,9 +3,10 @@ import React, { useEffect, useRef } from 'react';
 interface VisualizerProps {
   stream: MediaStream | null;
   isRecording: boolean;
+  isPaused: boolean;
 }
 
-const Visualizer: React.FC<VisualizerProps> = ({ stream, isRecording }) => {
+const Visualizer: React.FC<VisualizerProps> = ({ stream, isRecording, isPaused }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const requestRef = useRef<number>();
   const analyserRef = useRef<AnalyserNode | null>(null);
@@ -29,6 +30,14 @@ const Visualizer: React.FC<VisualizerProps> = ({ stream, isRecording }) => {
       audioCtx.resume();
     }
 
+    // Only create source if not already created for this stream to avoid graph issues
+    // Ideally, we manage this better, but for this scope, we just create it.
+    // To prevent errors, we can check if we are already connected or just recreate context.
+    // For simplicity/robustness in this hook:
+    if (analyserRef.current) {
+        analyserRef.current.disconnect();
+    }
+
     const source = audioCtx.createMediaStreamSource(stream);
     const analyser = audioCtx.createAnalyser();
     analyser.fftSize = 256;
@@ -43,6 +52,18 @@ const Visualizer: React.FC<VisualizerProps> = ({ stream, isRecording }) => {
       
       requestRef.current = requestAnimationFrame(draw);
       
+      if (isPaused) {
+        // Draw flat line or gentle pulse
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.beginPath();
+        ctx.moveTo(0, canvas.height / 2);
+        ctx.lineTo(canvas.width, canvas.height / 2);
+        ctx.strokeStyle = '#e2e8f0'; // Slate 200
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        return;
+      }
+
       analyser.getByteFrequencyData(dataArrayRef.current!);
 
       ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -79,14 +100,11 @@ const Visualizer: React.FC<VisualizerProps> = ({ stream, isRecording }) => {
       if (requestRef.current) {
         cancelAnimationFrame(requestRef.current);
       }
-      if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
-        // We don't close the context here to reuse it, or we can close it.
-        // For this component lifecycle, let's just disconnect nodes.
-        source.disconnect();
-        analyser.disconnect();
-      }
+      // We don't close the context here to reuse it
+      if (source) source.disconnect();
+      if (analyser) analyser.disconnect();
     };
-  }, [stream, isRecording]);
+  }, [stream, isRecording, isPaused]);
 
   // Clear canvas when not recording
   useEffect(() => {
@@ -99,7 +117,7 @@ const Visualizer: React.FC<VisualizerProps> = ({ stream, isRecording }) => {
   }, [isRecording]);
 
   return (
-    <div className="w-full h-32 bg-slate-100 rounded-xl overflow-hidden border border-slate-200 shadow-inner relative flex items-center justify-center">
+    <div className="w-full h-32 bg-slate-50 rounded-xl overflow-hidden border border-slate-200 shadow-inner relative flex items-center justify-center transition-colors duration-300">
        {!isRecording && (
          <span className="text-slate-400 text-sm">Audio waves will appear here...</span>
        )}

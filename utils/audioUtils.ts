@@ -30,3 +30,31 @@ export const getMimeType = (): string => {
   }
   return 'audio/webm'; // Default fallback
 };
+
+/**
+ * Converts Float32 audio data (from AudioContext) to Int16 PCM.
+ */
+export const floatTo16BitPCM = (float32Array: Float32Array): ArrayBuffer => {
+  const buffer = new ArrayBuffer(float32Array.length * 2);
+  const view = new DataView(buffer);
+  for (let i = 0; i < float32Array.length; i++) {
+    // Clamp the value between -1 and 1
+    const s = Math.max(-1, Math.min(1, float32Array[i]));
+    // Convert to 16-bit PCM
+    view.setInt16(i * 2, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+  }
+  return buffer;
+};
+
+/**
+ * Encodes an ArrayBuffer to a Base64 string.
+ */
+export const base64Encode = (buffer: ArrayBuffer): string => {
+  let binary = '';
+  const bytes = new Uint8Array(buffer);
+  const len = bytes.byteLength;
+  for (let i = 0; i < len; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return window.btoa(binary);
+};
