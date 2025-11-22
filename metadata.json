@@ -1,0 +1,7 @@
+{
+  "name": "LinguaVoice Transcribe",
+  "description": "A high-fidelity voice-to-text application supporting English and Khmer using Gemini 2.5 Flash.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
